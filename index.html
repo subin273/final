@@ -1,52 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>국악 장단 리듬게임 (완전체)</title>
+    <style>
+        body { margin: 0; background: #dcd1ba; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #gameWrapper { width: 800px; height: 500px; background: #efe6d0; border: 4px solid #5a4431; position: relative; border-radius: 20px; }
+        #actionZone { height: 200px; position: relative; border-bottom: 2px solid #5a4431; }
+        #notesLane { height: 150px; position: relative; background: #eadecc; }
+        .jnote { position: absolute; width: 60px; height: 60px; background: #765335; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: bold; }
+        #controllerZone { height: 150px; display: flex; justify-content: space-around; align-items: center; }
+        .key-cap { background: #fff; padding: 20px; border: 2px solid #333; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="actionZone"></div>
+    <div id="notesLane"></div>
+    <div id="controllerZone">
+        <div class="key-cap" onclick="hit('gung')">쿵</div>
+        <div class="key-cap" onclick="hit('deok')">덕</div>
+        <div class="key-cap" onclick="hit('roll')">더러러러</div>
+        <div class="key-cap" onclick="hit('deong')">덩</div>
+    </div>
+</div>
+
 <script>
-// 1. 소리 파일 객체 생성 (오디오 파일 경로를 깃허브와 맞추세요)
-const sounds = {
-  deong: new Audio('deong.mp3'),
-  gung: new Audio('gung.mp3'),
-  chae: new Audio('chae.mp3'),
-  gideok: new Audio('gideok.mp3'),
-  roll: new Audio('roll.mp3')
-};
+    // 1. 소리 파일 정의
+    const sounds = {
+        deong: new Audio('deong.wav'),
+        gung: new Audio('gung.wav'),
+        deok: new Audio('deok.wav'),
+        gideok: new Audio('gideok.wav'),
+        roll: new Audio('roll.wav')
+    };
 
-// 2. 판정 시 소리 재생 로직을 hit() 함수 안에 넣습니다
-function hit(type) {
-  let targetNote = null;
-  const availableNotes = document.querySelectorAll(".jnote");
-  for (let i = 0; i < availableNotes.length; i++) {
-    if (availableNotes[i].dataset.hit === "false") {
-      targetNote = availableNotes[i];
-      break;
-    }
-  }
-  if (!targetNote) return;
-
-  const x = parseInt(targetNote.style.left);
-  const targetX = 260; 
-  const diff = Math.abs(x - targetX);
-
-  if (diff < 95) {
-    let nType = targetNote.dataset.type;
-    let isHitMatch = false;
-
-    // 맞는 노트 타입에 따라 소리 재생
-    if (nType === type || (nType === "gideok" && type === "chae") || (nType === "roll-master" && type === "roll")) {
-      isHitMatch = true;
-      // 🎶 여기서 소리를 재생합니다!
-      if (sounds[nType]) {
-          sounds[nType].currentTime = 0;
-          sounds[nType].play().catch(e => console.log("자동재생 대기"));
-      } else if (nType === "gideok" && sounds.gideok) {
-          sounds.gideok.currentTime = 0;
-          sounds.gideok.play();
-      }
+    // 2. 사운드 재생 함수
+    function playSound(key) {
+        if (sounds[key]) {
+            sounds[key].currentTime = 0;
+            sounds[key].play().catch(e => console.log("재생 대기"));
+        }
     }
 
-    if (isHitMatch) {
-      targetNote.dataset.hit = "true"; 
-      targetNote.remove();
-      combo++;
-      // ... 이후 점수/콤보 로직 동일
+    // 3. 노트 생성 및 이동 (게임의 핵심 로직)
+    function createNote() {
+        const lane = document.getElementById('notesLane');
+        const note = document.createElement('div');
+        note.className = 'jnote';
+        note.style.left = '800px';
+        note.dataset.hit = 'false';
+        
+        const types = ['gung', 'deok', 'roll', 'deong'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
+        note.dataset.type = randomType;
+        note.innerText = randomType;
+        
+        lane.appendChild(note);
+        
+        let pos = 800;
+        let interval = setInterval(() => {
+            pos -= 5;
+            note.style.left = pos + 'px';
+            if (pos < -60) {
+                clearInterval(interval);
+                note.remove();
+            }
+        }, 30);
     }
-  }
-}
+
+    // 4. 타격 판정 및 소리 재생
+    function hit(type) {
+        const notes = document.querySelectorAll('.jnote');
+        notes.forEach(note => {
+            let left = parseInt(note.style.left);
+            if (left > 0 && left < 150) { // 판정 범위
+                if (note.dataset.type === type || (note.dataset.type === 'roll' && type === 'roll')) {
+                    note.dataset.hit = 'true';
+                    note.remove();
+                    playSound(type); // 🎵 여기서 소리가 납니다!
+                }
+            }
+        });
+    }
+
+    // 주기적으로 노트 생성
+    setInterval(createNote, 2000);
+
 </script>
+</body>
+</html>
